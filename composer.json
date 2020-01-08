@@ -1,0 +1,22 @@
+{
+    "name": "swoosh/mq",
+    "type": "library",
+    "description": "Micro service framework base on swoole",
+    "keywords": ["php", "Swoole", "Swoosh", "Swoosh-component"],
+    "authors" : [
+        {
+            "name": "Wrath",
+            "email": "zouyisama@gmail.com",
+            "homepage": "http://www.vancelucas.com"
+        }
+    ],
+    "license": "Apache-2.0",
+    "require": {
+        "symfony/var-dumper": "^4.1"
+    },
+    "autoload": {
+        "psr-4": {
+          "Src\\MQ\\": "src/"
+        }
+    }
+}
