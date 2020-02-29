@@ -38,11 +38,25 @@ class RabbitmqConnection
     protected $password = 'guest';
 
     /**
+     * The lsit of the rabbitmq queue name
+     *
+     * @var array
+     */
+    protected $queue_names = [];
+
+    /**
      * The channel of the rabbitmq
      *
      * @var AMQPChannel
      */
     protected $channel;
+
+    /**
+     * The receiver quantity of the rabbitmq
+     *
+     * @var int
+     */
+    protected $receiver_quantity;
 
     /**
      * The connection of the rabbitmq
@@ -54,10 +68,13 @@ class RabbitmqConnection
     public function __construct()
     {
         $config = App::get('config')->get('app.mq');
+        $rabbitmq_config = App::get('config')->get('rabbitmq');
         $this->host = $config['host'];
         $this->port = $config['port'];
         $this->user = $config['user'];
         $this->password = $config['password'];
+        $this->receiver_quantity = $config['receiver_quantity'];
+        $this->queue_names = $rabbitmq_config['queue_name'];
     }
 
     /**
@@ -85,9 +102,17 @@ class RabbitmqConnection
             $this->channel = $this->getConnection()->channel();
         }
         
+        
         return $this->channel;
     }
 
+    /**
+     * Send msg to queue
+     *
+     * @param string $queue_name
+     * @param $msg
+     * @return void
+     */
     public function send(string $queue_name, $msg)
     {
         $this->getChannel()->queue_declare($queue_name);
@@ -96,9 +121,27 @@ class RabbitmqConnection
         $this->close();
     }
 
+    public function receive()
+    {
+        for ($i = 0; $i < $this->receiver_quantity; $i++) {
+            go(function () {
+                foreach ($this->queue_names as $queue_name) {
+                    $this->getChannel()->queue_declare($queue_name);
+                    $this->getChannel()->basic_consume($queue_name, '', false, true, false, false, function($msg) {
+                        echo $msg->body, "\n";
+                    });
+                }
+                while(count($this->getChannel()->callbacks)) {
+                    $this->getChannel()->wait();
+                }
+            });
+        }
+    }
+
     public function close()
     {
         $this->getConnection()->close();
         $this->getChannel()->close();
+        $this->connection = $this->channel = null;
     }
 }

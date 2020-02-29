@@ -12,5 +12,9 @@ class MQServiceProvider extends AbstractProvider
         $this->app->set('mq', function () {
             return (new MQManager)->getConnection();
         });
+
+        $this->app->set('mq_receiver', function () {
+            return (new MQManager)->getConnection();
+        });
     }
 }
