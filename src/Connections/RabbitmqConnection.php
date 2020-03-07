@@ -42,7 +42,7 @@ class RabbitmqConnection
      *
      * @var array
      */
-    protected $queue_names = [];
+    protected $queues = [];
 
     /**
      * The channel of the rabbitmq
@@ -50,13 +50,6 @@ class RabbitmqConnection
      * @var AMQPChannel
      */
     protected $channel;
-
-    /**
-     * The receiver quantity of the rabbitmq
-     *
-     * @var int
-     */
-    protected $receiver_quantity;
 
     /**
      * The connection of the rabbitmq
@@ -73,8 +66,7 @@ class RabbitmqConnection
         $this->port = $config['port'];
         $this->user = $config['user'];
         $this->password = $config['password'];
-        $this->receiver_quantity = $config['receiver_quantity'];
-        $this->queue_names = $rabbitmq_config['queue_name'];
+        $this->queues = $rabbitmq_config['queues'];
     }
 
     /**
@@ -123,14 +115,13 @@ class RabbitmqConnection
 
     public function receive()
     {
-        for ($i = 0; $i < $this->receiver_quantity; $i++) {
-            go(function () {
-                foreach ($this->queue_names as $queue_name) {
-                    $this->getChannel()->queue_declare($queue_name);
-                    $this->getChannel()->basic_consume($queue_name, '', false, true, false, false, function($msg) {
-                        echo $msg->body, "\n";
-                    });
-                }
+        foreach ($this->queues as $queue_name) {
+            go(function () use ($queue_name) {
+                $this->getChannel()->queue_declare($queue_name);
+                $this->getChannel()->basic_consume($queue_name, '', false, false, false, false, function($msg) {
+                    event(unserialize($msg->body));
+                    $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
+                });
                 while(count($this->getChannel()->callbacks)) {
                     $this->getChannel()->wait();
                 }
