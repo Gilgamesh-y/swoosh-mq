@@ -38,6 +38,20 @@ class RabbitmqConnection
     protected $password = 'guest';
 
     /**
+     * Message durability
+     *
+     * @var boolean
+     */
+    protected $durability = false;
+
+    /**
+     * Acknowledgment
+     *
+     * @var boolean
+     */
+    protected $ack = true;
+
+    /**
      * The lsit of the rabbitmq queue name
      *
      * @var array
@@ -66,6 +80,8 @@ class RabbitmqConnection
         $this->port = $config['port'];
         $this->user = $config['user'];
         $this->password = $config['password'];
+        $this->durability = $config['durability'];
+        $this->ack = $config['ack'];
         $this->queues = $rabbitmq_config['queues'];
     }
 
@@ -107,7 +123,7 @@ class RabbitmqConnection
      */
     public function send(string $queue_name, $msg)
     {
-        $this->getChannel()->queue_declare($queue_name);
+        $this->getChannel()->queue_declare($queue_name, false, $this->durability);
         $msg = new AMQPMessage($msg);
         $this->getChannel()->basic_publish($msg, '', $queue_name);
         $this->close();
@@ -117,8 +133,9 @@ class RabbitmqConnection
     {
         foreach ($this->queues as $queue_name) {
             go(function () use ($queue_name) {
-                $this->getChannel()->queue_declare($queue_name);
-                $this->getChannel()->basic_consume($queue_name, '', false, false, false, false, function($msg) {
+                $this->getChannel()->queue_declare($queue_name, false, $this->durability);
+                $this->getChannel()->basic_qos(null, 1, null);
+                $this->getChannel()->basic_consume($queue_name, '', false, $this->ack, false, false, function($msg) {
                     event(unserialize($msg->body));
                     $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
                 });
