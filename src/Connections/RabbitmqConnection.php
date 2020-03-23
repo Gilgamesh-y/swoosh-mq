@@ -126,6 +126,22 @@ class RabbitmqConnection
     }
 
     /**
+     * Send msg to queue or exchange
+     *
+     * @param string $name queue name or exchange name
+     * @param mixed $msg
+     * @param string|null $routing_key
+     * @return void
+     */
+    public function send(string $name, $msg, string $routing_key = null)
+    {
+        if (!is_null($routing_key)) {
+            return $this->send_to_exchange($name, $msg, $routing_key);
+        }
+        return $this->send_to_queue($name, $msg);
+    }
+
+    /**
      * Send msg
      */
 
@@ -133,7 +149,7 @@ class RabbitmqConnection
      * Send msg to queue
      *
      * @param string $queue_name
-     * @param $msg
+     * @param mixed $msg
      * @return void
      */
     public function send_to_queue(string $queue_name, $msg)
@@ -150,7 +166,7 @@ class RabbitmqConnection
      * Send msg to queue
      *
      * @param string $exchange_name
-     * @param mix $msg
+     * @param mixed $msg
      * @param string $routing_key
      * @return void
      */
@@ -163,6 +179,17 @@ class RabbitmqConnection
         $this->close();
 
         return;
+    }
+
+    /**
+     * Create receiver
+     *
+     * @return void
+     */
+    public function create_receiver()
+    {
+        $this->receive_from_exchange();
+        $this->receive_from_queue();
     }
 
     /**
@@ -205,7 +232,7 @@ class RabbitmqConnection
                 $queues = isset($config['queues']) ? $config['queues'] : null;
                 // Create exchange and set type
                 $this->getChannel()->exchange_declare($exchange, $type, false, false, false);
-                // Binding queue、exchange and routing_key when routing_key exists and the type is not fanout
+                // Binding temporary queue and exchange when queues not exists
                 if (!$queues) {
                     try {
                         list($queue_name, ) = $this->getChannel()->queue_declare('', false, $this->durability, true, false);
@@ -215,6 +242,7 @@ class RabbitmqConnection
                         //throw $th;
                     }
                 }
+                // Binding queue、exchange and routing_key when routing_key exists and the type is not fanout
                 if ($queues && $type != 'fanout') {
                     foreach ($queues as $queue_name => $routing_keys) {
                         try {
@@ -235,6 +263,13 @@ class RabbitmqConnection
         }
     }
 
+    /**
+     * Starts a queue consumer
+     *
+     * @param string $queue
+     * @throws \PhpAmqpLib\Exception\AMQPTimeoutException if the specified operation timeout was exceeded
+     * @return void
+     */
     public function basic_consume(string $queue_name)
     {
         $this->getChannel()->basic_consume($queue_name, '', false, $this->no_ack, false, false, function($msg) {
@@ -243,12 +278,6 @@ class RabbitmqConnection
                 $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
             }
         });
-    }
-
-    public function receive()
-    {
-        $this->receive_from_exchange();
-        $this->receive_from_queue();
     }
 
     public function close()
