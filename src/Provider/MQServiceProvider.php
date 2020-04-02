@@ -2,19 +2,25 @@
 
 namespace Src\MQ\Provider;
 
-use Src\Core\AbstractProvider;
+use Src\App;
 use Src\MQ\MQManager;
+use Swoole\Server;
+use Src\Core\AbstractProvider;
 
 class MQServiceProvider extends AbstractProvider
 {
     public function register()
     {
         $this->app->set('mq', function () {
-            return (new MQManager)->getConnection();
+            $config = App::get('config')->get('app.mq');
+            $route_config = App::get('config')->get('mq');
+            return (new MQManager)->getConnection($config, $route_config);
         });
 
         $this->app->set('mq_receiver', function () {
-            return (new MQManager)->getConnection()->create_receiver();
+            $config = App::get('config')->get('app.mq');
+            $route_config = App::get('config')->get('mq');
+            return (new MQManager)->getConnection($config, $route_config)->create_receiver();
         });
     }
 }

@@ -7,36 +7,8 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
-class RabbitmqConnection
+class RabbitmqConnection extends Connection
 {
-    /**
-     * The host of the rabbitmq
-     *
-     * @var string
-     */
-    protected $host = '127.0.0.1';
-
-    /**
-     * The port of the rabbitmq
-     *
-     * @var string
-     */
-    protected $port = 5672;
-
-    /**
-     * The user of the rabbitmq
-     *
-     * @var string
-     */
-    protected $user = 'guest';
-
-    /**
-     * The password of the rabbitmq
-     *
-     * @var string
-     */
-    protected $password = 'guest';
-
     /**
      * Message durability
      *
@@ -79,19 +51,15 @@ class RabbitmqConnection
      */
     protected $connection = [];
 
-    public function __construct()
+    public function __construct(array $config, array $route_config)
     {
-        $config = App::get('config')->get('app.mq');
-        $this->host = $config['host'];
-        $this->port = $config['port'];
-        $this->user = $config['user'];
-        $this->password = $config['password'];
+        parent::__construct($config, $route_config);
+
         $this->durability = $config['durability'];
         $this->no_ack = $config['no_ack'];
 
-        $rabbitmq_name_config = App::get('config')->get('rabbitmq');
-        $this->queues = $rabbitmq_name_config['queues'];
-        $this->exchanges = $rabbitmq_name_config['exchanges'];
+        $this->queues = $route_config['rabbitmq']['queues'];
+        $this->exchanges = $route_config['rabbitmq']['exchanges'];
     }
 
     /**
@@ -231,7 +199,7 @@ class RabbitmqConnection
                 $type = $config['type'];
                 $queues = isset($config['queues']) ? $config['queues'] : null;
                 // Create exchange and set type
-                $this->getChannel()->exchange_declare($exchange, $type, false, false, false);
+                $this->getChannel()->exchange_declare($exchange, $type, false, $this->durability, false);
                 // Binding temporary queue and exchange when queues not exists
                 if (!$queues) {
                     try {
