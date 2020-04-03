@@ -176,8 +176,7 @@ class RabbitmqConnection extends Connection
                     $this->close();
                 });
                 $this->getChannel()->queue_declare($queue_name, false, $this->durability);
-                // Fair scheduling
-                $this->getChannel()->basic_qos(null, 1, null);
+                $this->getChannel()->basic_qos(0, 1, false);
 
                 $this->basic_consume($queue_name);
                 while(count($this->getChannel()->callbacks)) {
@@ -207,6 +206,7 @@ class RabbitmqConnection extends Connection
                 if (!$queues) {
                     try {
                         list($queue_name, ) = $this->getChannel()->queue_declare('', false, $this->durability, true, false);
+                        $this->getChannel()->basic_qos(0, 1, false);
                         $this->getChannel()->queue_bind($queue_name, $exchange);
                         $this->basic_consume($queue_name);
                     } catch (\Throwable $th) {
@@ -218,6 +218,7 @@ class RabbitmqConnection extends Connection
                     foreach ($queues as $queue_name => $routing_keys) {
                         try {
                             $this->getChannel()->queue_declare($queue_name, false, $this->durability, true, false);
+                            $this->getChannel()->basic_qos(0, 1, false);
                             foreach ($routing_keys as $routing_key) {
                                 $this->getChannel()->queue_bind($queue_name, $exchange, $routing_key);
                             }
