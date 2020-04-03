@@ -2,7 +2,9 @@
 
 namespace Src\MQ\Connections;
 
-abstract class Connection
+use Src\MQ\Contract\ConnectionInterface;
+
+abstract class Connection implements ConnectionInterface
 {
     /**
      * The host of the mq

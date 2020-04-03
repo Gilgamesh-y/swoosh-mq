@@ -12,8 +12,7 @@
     ],
     "license": "Apache-2.0",
     "require": {
-        "symfony/var-dumper": "^4.1",
-        "nmred/kafka-php": "0.2.*"
+        "symfony/var-dumper": "^4.1"
     },
     "autoload": {
         "psr-4": {

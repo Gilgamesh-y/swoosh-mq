@@ -103,6 +103,9 @@ class RabbitmqConnection extends Connection
      */
     public function send(string $name, $msg, string $routing_key = null)
     {
+        if (is_object($msg)) {
+            $msg = serialize($msg);
+        }
         if (!is_null($routing_key)) {
             return $this->send_to_exchange($name, $msg, $routing_key);
         }
