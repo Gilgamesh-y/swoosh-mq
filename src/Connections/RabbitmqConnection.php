@@ -61,11 +61,8 @@ class RabbitmqConnection extends Connection
         $this->queues = $route_config['rabbitmq']['queues'];
         $this->exchanges = $route_config['rabbitmq']['exchanges'];
     }
-
-    /**
-     * Get the connection of the rabbitmq
-     *
-     * @return AMQPStreamConnection
+/** * Get the connection of the rabbitmq *
+         * @return AMQPStreamConnection
      */
     public function getConnection(): AMQPStreamConnection
     {
@@ -143,9 +140,8 @@ class RabbitmqConnection extends Connection
      */
     public function send_to_exchange(string $exchange_name, $msg, string $routing_key = '')
     {
-        $type = isset($this->exchanges[$exchange_name]) ? $this->exchanges[$exchange_name]['type'] : 'fanout';
-        $this->getChannel()->exchange_declare($exchange_name, $type, false, false, false);
-        $msg = new AMQPMessage($msg);
+        $type = isset($this->exchanges[$exchange_name]) ? $this->exchanges[$exchange_name]['type'] : 'fanout'; $this->getChannel()->exchange_declare($exchange_name, $type, false, false, false);
+               $msg = new AMQPMessage($msg);
         $this->getChannel()->basic_publish($msg, $exchange_name, $routing_key);
         $this->close();
 
@@ -256,6 +252,5 @@ class RabbitmqConnection extends Connection
     {
         $this->getConnection()->close();
         $this->getChannel()->close();
-        $this->connection = $this->channel = null;
     }
 }
