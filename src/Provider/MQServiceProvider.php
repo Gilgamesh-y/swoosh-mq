@@ -23,4 +23,9 @@ class MQServiceProvider extends AbstractProvider
             return (new MQManager)->getConnection($config, $route_config)->create_receiver();
         });
     }
+
+    public function active()
+    {
+        $this->app->active('mq_receiver');
+    }
 }
